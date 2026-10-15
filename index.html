@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>李煜格养成</title>
+<style>
+  :root{
+    --brown:#8b5a2b; --brown-d:#6f4520; --tan:#e8c39a; --cream:#fff6e9;
+    --pink:#ff7eb6; --red:#ff5252; --orange:#ffab40; --blue:#4fc3f7; --purple:#b388ff;
+    --green:#66bb6a; --gold:#ffc93c;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:linear-gradient(160deg,#ffe8c9 0%,#ffd9e8 50%,#d9f0ff 100%);
+    min-height:100vh; color:#4a3421; display:flex; justify-content:center;
+  }
+  #app{width:100%; max-width:560px; padding:12px 12px 28px; display:flex; flex-direction:column; gap:10px;}
+
+  /* 顶部标题 */
+  header{display:flex; align-items:center; justify-content:space-between;}
+  h1{font-size:22px; margin:0; color:var(--brown-d); letter-spacing:2px;}
+  h1 small{font-size:12px; color:#a07850; letter-spacing:0;}
+  #coinBox{
+    background:var(--gold); color:#6b4a00; font-weight:bold; border-radius:999px;
+    padding:6px 14px; box-shadow:0 2px 6px rgba(0,0,0,.15); font-size:15px;
+  }
+
+  /* 数值面板 */
+  #stats{
+    background:var(--cream); border-radius:16px; padding:10px 12px;
+    display:grid; grid-template-columns:1fr 1fr; gap:6px 14px;
+    box-shadow:0 3px 10px rgba(140,90,40,.15);
+  }
+  .stat{display:flex; align-items:center; gap:6px; font-size:12px;}
+  .stat .lb{width:44px; flex:none; color:#7a5c3a;}
+  .bar{flex:1; height:10px; background:#f0e2cf; border-radius:999px; overflow:hidden;}
+  .bar i{display:block; height:100%; width:50%; border-radius:999px; transition:width .4s ease;}
+  .stat .vl{width:34px; text-align:right; font-weight:bold; font-size:11px;}
+  #barLove i{background:linear-gradient(90deg,#ff9ecb,var(--pink));}
+  #barHate i{background:linear-gradient(90deg,#ff8a80,var(--red));}
+  #barFood i{background:linear-gradient(90deg,#ffd180,var(--orange));}
+  #barEnergy i{background:linear-gradient(90deg,#81d4fa,var(--blue));}
+  #barIntel i{background:linear-gradient(90deg,#d1c4e9,var(--purple));}
+
+  /* 舞台 */
+  #stage{
+    position:relative; border-radius:20px; overflow:hidden; min-height:300px;
+    background:linear-gradient(#bfe9ff 0%,#dff7d0 70%,#cdeeb2 100%);
+    box-shadow:0 4px 14px rgba(140,90,40,.2); display:flex; align-items:flex-end; justify-content:center;
+  }
+  #stage::after{content:""; position:absolute; left:0; right:0; bottom:0; height:56px;
+    background:radial-gradient(ellipse at 50% 100%,#a8d977 0%,#93cb63 100%);}
+  .sun{position:absolute; top:14px; right:16px; width:44px; height:44px; border-radius:50%;
+    background:#ffe082; box-shadow:0 0 24px #ffd54f;}
+  .cloud{position:absolute; font-size:26px; opacity:.9; animation:drift 26s linear infinite;}
+  .cloud.c1{top:18px; left:-40px;}
+  .cloud.c2{top:52px; left:-90px; animation-duration:38s; font-size:18px;}
+  @keyframes drift{from{transform:translateX(0);} to{transform:translateX(130vw);}}
+
+  #bubble{
+    position:absolute; top:12px; left:50%; transform:translateX(-50%);
+    background:#fff; border-radius:14px; padding:7px 12px; font-size:13px; max-width:86%;
+    box-shadow:0 2px 8px rgba(0,0,0,.15); z-index:5; text-align:center; opacity:0;
+    transition:opacity .3s; pointer-events:none; color:#5a4126;
+  }
+  #bubble.show{opacity:1;}
+  #bubble::after{content:""; position:absolute; bottom:-7px; left:50%; margin-left:-7px;
+    border:7px solid transparent; border-top-color:#fff; border-bottom:0;}
+
+  #bearWrap{position:relative; z-index:3; width:min(78%,320px); margin-bottom:8px;}
+  #bearSvg{width:100%; height:auto; display:block; overflow:visible;}
+  .moodG{display:none;}
+  #bearSvg[data-mood="normal"] #e-normal,
+  #bearSvg[data-mood="happy"] #e-happy,
+  #bearSvg[data-mood="sad"] #e-sad,
+  #bearSvg[data-mood="angry"] #e-angry{display:block;}
+
+  /* 熊动画 */
+  .bear{transform-origin:160px 300px;}
+  .anim-eat  .bear{animation:chew .28s ease-in-out 4;}
+  .anim-cute .bear{animation:cuteHop .45s ease-in-out 3;}
+  .anim-hit  .bear{animation:shake .12s ease-in-out 5;}
+  .anim-travel .bear{animation:spinJoy 1s ease-in-out 2;}
+  .anim-study .bear{animation:sway .5s ease-in-out 4;}
+  .anim-work  .bear{animation:bop .4s ease-in-out 4;}
+  .anim-sleep .bear{animation:breathe 1.6s ease-in-out infinite;}
+  .anim-play  .bear{animation:jump .5s ease-in-out 3;}
+  .anim-bath  .bear{animation:wash .5s ease-in-out 4;}
+  @keyframes chew{0%,100%{transform:scale(1);} 50%{transform:scale(1.04,.96);}}
+  @keyframes cuteHop{0%,100%{transform:translateY(0) rotate(0);} 50%{transform:translateY(-22px) rotate(-6deg);}}
+  @keyframes shake{0%,100%{transform:translateX(0);} 25%{transform:translateX(-9px) rotate(-3deg);} 75%{transform:translateX(9px) rotate(3deg);}}
+  @keyframes spinJoy{0%,100%{transform:rotate(0) translateY(0);} 50%{transform:rotate(10deg) translateY(-14px);}}
+  @keyframes sway{0%,100%{transform:rotate(-3deg);} 50%{transform:rotate(3deg);}}
+  @keyframes bop{0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);}}
+  @keyframes breathe{0%,100%{transform:scale(1);} 50%{transform:scale(1.03,.98);}}
+  @keyframes jump{0%,100%{transform:translateY(0) scale(1);} 40%{transform:translateY(-30px) scale(1.03);} 70%{transform:translateY(0) scale(.97,1.04);}}
+  @keyframes wash{0%,100%{transform:rotate(0) scale(1);} 25%{transform:rotate(-5deg) scale(1.03,.97);} 75%{transform:rotate(5deg) scale(.97,1.03);}}
+
+  #zzz{position:absolute; right:18%; top:24%; font-size:30px; display:none; z-index:4;
+    animation:floatUp 1.8s ease-in-out infinite;}
+  .anim-sleep ~ #zzz, #stage.sleeping #zzz{display:block;}
+  @keyframes floatUp{0%{opacity:0; transform:translateY(10px);} 50%{opacity:1;} 100%{opacity:0; transform:translateY(-26px);}}
+
+  .fx{position:absolute; font-size:28px; z-index:6; pointer-events:none;
+    animation:fxUp 1.1s ease-out forwards;}
+  @keyframes fxUp{0%{opacity:1; transform:translateY(0) scale(.7);} 100%{opacity:0; transform:translateY(-90px) scale(1.4);}}
+
+  /* 按钮区 */
+  #actions{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
+  .btn{
+    border:0; border-radius:14px; padding:10px 4px 8px; font-size:12px; cursor:pointer;
+    background:#fff; color:#5a4126; box-shadow:0 3px 8px rgba(140,90,40,.18);
+    display:flex; flex-direction:column; align-items:center; gap:2px; transition:transform .1s, opacity .2s;
+    font-family:inherit;
+  }
+  .btn .em{font-size:24px; line-height:1;}
+  .btn .cost{font-size:10px; color:#b08050;}
+  .btn:active{transform:scale(.93);}
+  .btn:disabled{opacity:.45; cursor:not-allowed;}
+  .btn.danger{background:#ffe3e3; color:#c62828;}
+  .btn.danger .cost{color:#e57373;}
+
+  /* 日志与页脚 */
+  #log{
+    background:rgba(255,255,255,.75); border-radius:14px; padding:8px 12px; font-size:12px;
+    max-height:96px; overflow-y:auto; line-height:1.7; color:#6d5133;
+  }
+  #log p{margin:0; border-bottom:1px dashed #e8d5bd; padding:2px 0;}
+  #log p:first-child{color:#8b5a2b; font-weight:bold;}
+  #foot{display:flex; justify-content:space-between; font-size:11px; color:#a07850;}
+  #foot button{border:0; background:rgba(255,255,255,.7); border-radius:8px; padding:3px 10px;
+    cursor:pointer; color:#b05a5a; font-family:inherit; font-size:11px;}
+  #win{
+    display:none; position:absolute; inset:0; z-index:8; background:rgba(255,248,230,.92);
+    flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:8px; padding:20px;
+  }
+  #win.show{display:flex;}
+  #win .big{font-size:44px; animation:cuteHop .8s ease-in-out infinite;}
+  #win h2{margin:0; color:#e91e90;}
+  #win p{margin:0; font-size:13px; color:#7a5c3a;}
+  #win button{border:0; background:var(--pink); color:#fff; border-radius:999px; padding:8px 22px; font-size:14px; cursor:pointer;}
+
+  @media (max-width:380px){
+    #actions{grid-template-columns:repeat(3,1fr);}
+    h1{font-size:19px;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- 标题与金币 -->
+  <header>
+    <h1>李煜格养成 <small>· 棕熊养成记</small></h1>
+    <div id="coinBox">💰 <span id="coin">0</span></div>
+  </header>
+
+  <!-- 五维数值条 -->
+  <section id="stats">
+    <div class="stat"><span class="lb">💕 好感</span><span class="bar" id="barLove"><i></i></span><span class="vl" id="vLove">0</span></div>
+    <div class="stat"><span class="lb">💢 仇恨</span><span class="bar" id="barHate"><i></i></span><span class="vl" id="vHate">0</span></div>
+    <div class="stat"><span class="lb">🍖 饱食</span><span class="bar" id="barFood"><i></i></span><span class="vl" id="vFood">0</span></div>
+    <div class="stat"><span class="lb">⚡ 精力</span><span class="bar" id="barEnergy"><i></i></span><span class="vl" id="vEnergy">0</span></div>
+    <div class="stat"><span class="lb">📚 智力</span><span class="bar" id="barIntel"><i></i></span><span class="vl" id="vIntel">0</span></div>
+  </section>
+
+  <!-- 游戏舞台：云朵、太阳、气泡、李煜格本体 -->
+  <section id="stage">
+    <div class="sun"></div>
+    <div class="cloud c1">☁️</div>
+    <div class="cloud c2">☁️</div>
+    <div id="bubble">你好呀，我是李煜格～</div>
+    <div id="bearWrap">
+      <!-- 用 SVG 代码绘制的原创棕熊「李煜格」 -->
+      <svg id="bearSvg" viewBox="0 0 320 330" data-mood="normal">
+        <g class="bear">
+          <!-- 手臂与腿 -->
+          <ellipse cx="66" cy="240" rx="26" ry="42" fill="#7a4c24" transform="rotate(18 66 240)"/>
+          <ellipse cx="254" cy="240" rx="26" ry="42" fill="#7a4c24" transform="rotate(-18 254 240)"/>
+          <ellipse cx="112" cy="306" rx="34" ry="20" fill="#7a4c24"/>
+          <ellipse cx="208" cy="306" rx="34" ry="20" fill="#7a4c24"/>
+          <ellipse cx="112" cy="310" rx="18" ry="9" fill="#d9a066"/>
+          <ellipse cx="208" cy="310" rx="18" ry="9" fill="#d9a066"/>
+          <!-- 身体与肚皮 -->
+          <ellipse cx="160" cy="248" rx="98" ry="76" fill="#8b5a2b"/>
+          <ellipse cx="160" cy="258" rx="60" ry="52" fill="#d9a066"/>
+          <!-- 耳朵 -->
+          <circle cx="92" cy="66" r="30" fill="#8b5a2b"/>
+          <circle cx="228" cy="66" r="30" fill="#8b5a2b"/>
+          <circle cx="92" cy="66" r="15" fill="#c9885a"/>
+          <circle cx="228" cy="66" r="15" fill="#c9885a"/>
+          <!-- 头 -->
+          <ellipse cx="160" cy="136" rx="96" ry="86" fill="#8b5a2b"/>
+          <!-- 口鼻区 -->
+          <ellipse cx="160" cy="172" rx="48" ry="33" fill="#e8c39a"/>
+          <ellipse cx="160" cy="154" rx="16" ry="11" fill="#402614"/>
+          <!-- 四种心情的表情（默认隐藏，由 data-mood 切换） -->
+          <g class="moodG" id="e-normal">
+            <ellipse cx="126" cy="124" rx="9" ry="11" fill="#2b1a10"/>
+            <ellipse cx="194" cy="124" rx="9" ry="11" fill="#2b1a10"/>
+            <circle cx="129" cy="120" r="3" fill="#fff"/>
+            <circle cx="197" cy="120" r="3" fill="#fff"/>
+            <path d="M146 186 Q160 196 174 186" stroke="#402614" stroke-width="4" fill="none" stroke-linecap="round"/>
+          </g>
+          <g class="moodG" id="e-happy">
+            <path d="M114 128 Q126 112 138 128" stroke="#2b1a10" stroke-width="6" fill="none" stroke-linecap="round"/>
+            <path d="M182 128 Q194 112 206 128" stroke="#2b1a10" stroke-width="6" fill="none" stroke-linecap="round"/>
+            <path d="M142 184 Q160 202 178 184 Q160 192 142 184" fill="#402614"/>
+            <ellipse cx="104" cy="160" rx="13" ry="8" fill="#ff9ecb" opacity=".75"/>
+            <ellipse cx="216" cy="160" rx="13" ry="8" fill="#ff9ecb" opacity=".75"/>
+          </g>
+          <g class="moodG" id="e-sad">
+            <ellipse cx="126" cy="126" rx="9" ry="11" fill="#2b1a10"/>
+            <ellipse cx="194" cy="126" rx="9" ry="11" fill="#2b1a10"/>
+            <circle cx="129" cy="122" r="3" fill="#fff"/>
+            <circle cx="197" cy="122" r="3" fill="#fff"/>
+            <path d="M112 106 Q126 98 140 108" stroke="#5a3a1c" stroke-width="5" fill="none" stroke-linecap="round"/>
+            <path d="M180 108 Q194 98 208 106" stroke="#5a3a1c" stroke-width="5" fill="none" stroke-linecap="round"/>
+            <path d="M148 196 Q160 186 172 196" stroke="#402614" stroke-width="4" fill="none" stroke-linecap="round"/>
+            <path d="M212 140 q7 12 0 17 q-7 -5 0 -17" fill="#64b5f6"/>
+          </g>
+          <g class="moodG" id="e-angry">
+            <ellipse cx="126" cy="128" rx="9" ry="10" fill="#2b1a10"/>
+            <ellipse cx="194" cy="128" rx="9" ry="10" fill="#2b1a10"/>
+            <circle cx="129" cy="125" r="3" fill="#fff"/>
+            <circle cx="197" cy="125" r="3" fill="#fff"/>
+            <path d="M110 102 L142 114" stroke="#4a2c17" stroke-width="7" stroke-linecap="round"/>
+            <path d="M210 102 L178 114" stroke="#4a2c17" stroke-width="7" stroke-linecap="round"/>
+            <path d="M146 198 Q160 184 174 198" stroke="#402614" stroke-width="5" fill="none" stroke-linecap="round"/>
+            <path d="M236 96 l14 0 m-7 -7 l0 14" stroke="#e53935" stroke-width="5" stroke-linecap="round" transform="rotate(15 243 96)"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <div id="zzz">💤</div>
+    <!-- 养成成功结算 -->
+    <div id="win">
+      <div class="big">🎉</div>
+      <h2>养成成功！李煜格爱你！</h2>
+      <p id="winTxt">好感度满 100，李煜格已成为最黏你的小熊～</p>
+      <button onclick="closeWin()">继续相处</button>
+    </div>
+  </section>
+
+  <!-- 互动按钮 -->
+  <nav id="actions">
+    <button class="btn" data-act="feed"><span class="em">🍖</span>投喂<span class="cost">💰10</span></button>
+    <button class="btn" data-act="cute"><span class="em">🥰</span>卖萌<span class="cost">⚡5</span></button>
+    <button class="btn danger" data-act="hit"><span class="em">👊</span>敲打<span class="cost">-好感</span></button>
+    <button class="btn" data-act="travel"><span class="em">✈️</span>旅游<span class="cost">💰30</span></button>
+    <button class="btn" data-act="study"><span class="em">📚</span>学习<span class="cost">⚡15</span></button>
+    <button class="btn" data-act="work"><span class="em">💼</span>打工<span class="cost">⚡15</span></button>
+    <button class="btn" data-act="play"><span class="em">🎾</span>玩耍<span class="cost">⚡10</span></button>
+    <button class="btn" data-act="sleep"><span class="em">😴</span>睡觉<span class="cost">恢复</span></button>
+    <button class="btn" data-act="bath"><span class="em">🛁</span>洗澡<span class="cost">💰5</span></button>
+  </nav>
+
+  <!-- 事件日志 -->
+  <div id="log"></div>
+
+  <!-- 页脚与重置 -->
+  <div id="foot">
+    <span>数据自动保存在本机浏览器 · 可离线游玩</span>
+    <button id="resetBtn">🔄 重置存档</button>
+  </div>
+</div>
+
+<script>
+const KEY='luyuge_save_v1';
+const DEF={love:50,hate:0,coin:100,food:80,energy:80,intel:10,log:['李煜格出生啦！它圆滚滚地望着你～']};
+let S=load(), busy=false;
+
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&typeof d.love==='number')return Object.assign({},DEF,d);}catch(e){}return Object.assign({},DEF);}
+function save(){localStorage.setItem(KEY,JSON.stringify(S));}
+const clamp=(v)=>Math.max(0,Math.min(100,v));
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+
+const $=(id)=>document.getElementById(id);
+const bubble=$('bubble'), stage=$('stage'), svg=$('bearSvg');
+
+function mood(){
+  if(S.hate>=60)return 'angry';
+  if(S.food<15||S.energy<10)return 'sad';
+  if(S.love<=25)return 'sad';
+  if(S.love>=70)return 'happy';
+  return 'normal';
+}
+function render(){
+  $('coin').textContent=S.coin;
+  [['Love','love'],['Hate','hate'],['Food','food'],['Energy','energy'],['Intel','intel']].forEach(([id,k])=>{
+    $('bar'+id).firstElementChild.style.width=S[k]+'%';
+    $('v'+id).textContent=S[k];
+  });
+  svg.dataset.mood=mood();
+  document.querySelectorAll('.btn').forEach(b=>b.disabled=busy||!canAct(b.dataset.act));
+  if(S.love>=100&&!sessionStorage.getItem('winShown')){showWin();}
+}
+function say(t,keep){
+  bubble.textContent=t; bubble.classList.add('show');
+  clearTimeout(say._t);
+  if(!keep)say._t=setTimeout(()=>bubble.classList.remove('show'),2600);
+}
+function log(t){S.log.unshift(t);if(S.log.length>30)S.log.pop();$('log').innerHTML=S.log.slice(0,12).map(x=>'<p>· '+x+'</p>').join('');}
+function fx(em,n){for(let i=0;i<n;i++){const s=document.createElement('span');s.className='fx';s.textContent=em;
+  s.style.left=(30+Math.random()*40)+'%';s.style.top=(45+Math.random()*25)+'%';
+  s.style.animationDelay=(i*.12)+'s';stage.appendChild(s);setTimeout(()=>s.remove(),1400);}}
+function anim(name,dur){stage.classList.remove('anim-eat','anim-cute','anim-hit','anim-travel','anim-study','anim-work','anim-sleep','anim-play','anim-bath');
+  if(name)stage.classList.add('anim-'+name);
+  busy=true;render();
+  setTimeout(()=>{stage.classList.remove('anim-'+name);busy=false;render();},dur);}
+
+const DEST=[
+  {n:'森林秘境',e:'🌳',txt:'李煜格在森林里追蝴蝶，还捡到一颗超大的松果！'},
+  {n:'海边沙滩',e:'🏖️',txt:'李煜格堆了一个大沙堡，浪花来了它跑得比谁都快～'},
+  {n:'雪山之巅',e:'⛰️',txt:'李煜格从雪坡上滚下来，变成了一只白熊，逗得你哈哈大笑。'},
+  {n:'欢乐游乐园',e:'🎡',txt:'李煜格坐旋转木马转了三圈，下来还在晕，萌翻了！'},
+  {n:'夜市小吃街',e:'🍢',txt:'李煜格一口气吃了五串烤肉，摸着圆肚子打饱嗝。'}
+];
+const TIRED=['李煜格撅起嘴：我累坏啦，先睡会儿吧……','李煜格摇头晃脑：没力气了，歇一歇嘛。'];
+const HUNG=['李煜格捂着肚子：咕咕咕～我饿了！','李煜格眼巴巴望着你：有吃的吗？'];
+
+function canAct(a){
+  const c={feed:()=>S.coin>=10&&S.food<96,cute:()=>S.energy>=5,hit:()=>true,
+    travel:()=>S.coin>=30&&S.energy>=10,study:()=>S.energy>=15,work:()=>S.energy>=15&&S.food>=10,
+    play:()=>S.energy>=10&&S.food>=10,sleep:()=>S.energy<100,bath:()=>S.coin>=5&&S.energy>=5};
+  return c[a]?c[a]():true;
+}
+function need(a){
+  if(a==='feed'){
+    if(S.coin<10)return '金币不够投喂（需要💰10）';
+    if(S.food>=96)return '李煜格已经吃得很饱啦～';
+  }
+  if((a==='cute'||a==='study'||a==='work')&&S.energy<(a==='cute'?5:15))return TIRED[0];
+  if(a==='travel'&&S.coin<30)return '金币不够旅游（需要💰30）';
+  if(a==='travel'&&S.energy<10)return TIRED[1];
+  if((a==='work')&&S.food<10)return HUNG[0];
+  if(a==='play'&&(S.energy<10||S.food<10))return S.food<10?HUNG[1]:TIRED[1];
+  if(a==='bath'){
+    if(S.coin<5)return '金币不够洗澡（需要💰5）';
+    if(S.energy<5)return TIRED[1];
+  }
+  return null;
+}
+function act(a){
+  if(busy)return;
+  const bad=need(a); if(bad){say(bad);log(bad);render();return;}
+  let msg='';
+  if(a==='feed'){
+    S.coin-=10;S.love=clamp(S.love+5);S.hate=clamp(S.hate-3);S.food=clamp(S.food+22);
+    msg='李煜格大口啃着蜂蜜肉骨头，幸福得直哼哼～';fx('🍖',2);fx('💕',2);anim('eat',1200);
+  }else if(a==='cute'){
+    S.energy-=5;S.love=clamp(S.love+4);S.hate=clamp(S.hate-2);
+    const c=['李煜格抱着你的腿蹭来蹭去，还会歪头杀！','李煜格捂着脸扭来扭去，奶声奶气地撒娇～','李煜格双手合十眼巴巴看你，太可爱了！'];
+    msg=c[rnd(0,c.length-1)];fx('🥰',3);anim('cute',1400);
+  }else if(a==='hit'){
+    S.hate=clamp(S.hate+8);S.love=clamp(S.love-6);
+    const c=['李煜格委屈地瘪嘴，眼眶都红了……','李煜格抱着头缩成一团，气得背过身去！','李煜格瞪圆了眼睛，鼻孔直冒粗气！'];
+    msg=c[rnd(0,c.length-1)];fx('💢',3);anim('hit',700);
+  }else if(a==='travel'){
+    S.coin-=30;S.energy-=10;S.food=clamp(S.food-8);S.love=clamp(S.love+10);S.hate=clamp(S.hate-4);
+    const d=DEST[rnd(0,DEST.length-1)];
+    msg='带着李煜格去了【'+d.n+'】！'+d.txt;fx(d.e,3);fx('💕',2);anim('travel',2000);
+  }else if(a==='study'){
+    S.energy-=15;S.food=clamp(S.food-6);
+    const earn=12+Sintel();S.coin+=earn;S.intel=clamp(S.intel+3);S.love=clamp(S.love-2);
+    msg='李煜格认真上完课，学到了新知识，赚了💰'+earn+'（智力+3，它有点小抱怨但还是努力了）';
+    fx('📚',2);fx('💰',3);anim('study',2000);
+  }else if(a==='work'){
+    S.energy-=15;S.food=clamp(S.food-10);
+    const earn=20+rnd(0,10);S.coin+=earn;S.love=clamp(S.love-3);
+    msg='李煜格去搬木头打工，累得直喘气，赚了💰'+earn;fx('💰',4);anim('work',1600);
+  }else if(a==='play'){
+    S.energy-=10;S.food=clamp(S.food-8);S.love=clamp(S.love+6);S.hate=clamp(S.hate-3);
+    msg='你陪李煜格玩接球游戏，它蹦来蹦去开心极了！';fx('🎾',3);fx('💕',2);anim('play',1500);
+  }else if(a==='sleep'){
+    const gain=Math.min(40,100-S.energy);S.energy+=gain;
+    msg='李煜格呼呼大睡，一觉回了'+gain+'点精力💤';anim('sleep',3000);stage.classList.add('sleeping');
+    setTimeout(()=>stage.classList.remove('sleeping'),3000);
+  }else if(a==='bath'){
+    S.coin-=5;S.energy-=5;S.love=clamp(S.love+3);S.hate=clamp(S.hate-2);
+    const c=['李煜格泡在泡泡浴里搓啊搓，洗得干干净香喷喷～','李煜格在澡盆里扑腾水花，把自己洗成了泡泡熊！','洗完澡的李煜格毛发蓬松，得意地转圈圈展示～'];
+    msg=c[rnd(0,c.length-1)];fx('🛁',2);fx('🫧',3);fx('💕',1);anim('bath',2000);
+  }
+  S.log.unshift(msg);if(S.log.length>30)S.log.pop();
+  say(msg);save();render();
+  $('log').innerHTML=S.log.slice(0,12).map(x=>'<p>· '+x+'</p>').join('');
+}
+function Sintel(){return Math.floor(S.intel*0.8);}
+
+function showWin(){$('win').classList.add('show');sessionStorage.setItem('winShown','1');fx('🎉',5);}
+function closeWin(){$('win').classList.remove('show');}
+
+document.querySelectorAll('.btn').forEach(b=>b.addEventListener('click',()=>act(b.dataset.act)));
+$('resetBtn').addEventListener('click',()=>{
+  if(confirm('确定要重置存档，让李煜格重新开始吗？')){localStorage.removeItem(KEY);S=load();save();sessionStorage.removeItem('winShown');render();say('李煜格重新出生啦！');}
+});
+render();
+log(S.log[0]);
+say('你好呀，我是李煜格～点下面的按钮照顾我吧！');
+</script>
+<!--
+【文件末尾·标签汇总】
+1. <html lang="zh-CN"> 根标签，声明页面语言为简体中文
+2. <head> 文档头部：含 <meta charset> 编码、<meta viewport> 移动端适配、<title> 页面标题、<style> 内联样式
+3. <body> 页面主体：所有可见内容
+4. <div id="app"> 游戏整体容器（居中限宽布局）
+5. <header> 顶部栏：标题 + 金币显示（内含 <h1>、<small>、<span>）
+6. <section id="stats"> 五维数值面板，内部 <div class="stat"> 每条数值，<span class="bar"><i> 为进度条，<span class="vl"> 为数字
+7. <section id="stage"> 游戏舞台：包含 .sun 太阳、.cloud 云朵、<div id="bubble"> 对话气泡、<div id="bearWrap"> 熊容器、<div id="zzz"> 睡眠符号
+8. <svg id="bearSvg"> 原创棕熊「李煜格」矢量形象：<g class="bear"> 熊整体，<ellipse>/<circle> 拼出手脚身体耳朵头，<path> 画嘴型眉型
+9. <g class="moodG"> 四组心情表情 e-normal/e-happy/e-sad/e-angry，由 data-mood 切换显隐
+10. <div id="win"> 养成成功结算浮层（<h2>/<p>/<button>）
+11. <nav id="actions"> 互动按钮区，<button class="btn"> 每个含 .em 图标、文字、.cost 消耗说明
+12. <div id="log"> 事件日志列表，由 JS 填充 <p>
+13. <div id="foot"> 底部说明 + <button id="resetBtn"> 重置存档
+14. <script> 内联 JS：存档(localStorage)、数值增减、表情切换、动画 class、随机剧情、结算与重置
+15. <button class="btn" data-act="bath"> 洗澡按钮：花💰5、耗⚡5，+好感-仇恨，带泡泡飘字与 wash 摇洗动画
+-->
+</body>
+</html>
